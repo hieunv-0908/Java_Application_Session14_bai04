@@ -1,0 +1,52 @@
+Phần 1 – Phân tích & đề xuất
+1. I/O
+
+Input
+
+userId
+productId
+quantity
+
+Output
+
+Khi checkout:
+Thành công: giữ hàng (reserve)
+Thất bại: “Không đủ hàng”
+Sau 15 phút:
+Nếu chưa thanh toán → hoàn kho
+Nếu đã thanh toán → trừ kho vĩnh viễn
+2. Bản chất bài toán
+Không thể dùng transaction dài 15 phút
+Cần tách thành:
+transaction ngắn (reserve)
+xử lý bất đồng bộ (release)
+Giải pháp 1 – Transaction + trạng thái PENDING
+Ý tưởng
+Khi checkout:
+Trừ kho ngay
+Tạo Order = PENDING
+Lưu expireTime = now + 15 phút
+Sau 15 phút:
+Nếu chưa thanh toán → trả lại kho
+Giải pháp 2 – Scheduled Task (khuyến nghị)
+Ý tưởng
+Không giữ transaction lâu
+Dùng job chạy định kỳ:
+Quét các đơn PENDING quá hạn
+Hoàn kho
+
+Phần 2 – Thiết kế luồng
+Flow
+User checkout
+Begin transaction
+Kiểm tra stock
+Trừ stock
+Tạo order PENDING
+Commit
+Job nền (mỗi 1 phút)
+Lấy danh sách order PENDING hết hạn
+Với từng order:
+Begin transaction
+Hoàn kho
+Update trạng thái CANCELLED
+Commit
